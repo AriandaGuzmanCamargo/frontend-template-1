@@ -6,10 +6,44 @@ const Productos = () => {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [errorFormulario, setErrorFormulario] = useState(null);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    precio: '',
+    stock: '',
+    id_categoria: '',
+    descripcion: '',
+    imagen_url: ''
+  });
 
   useEffect(() => {
     cargarProductos();
   }, []);
+
+  const getMensajeErrorCreacion = (error) => {
+    const status = error?.status;
+    const apiMessage = error?.message;
+
+    if (status === 401 || status === 403) {
+      return 'Tu sesión no es válida o expiró. Vuelve a iniciar sesión.';
+    }
+
+    if (status === 404) {
+      return 'El endpoint protegido de creación no existe en tu API. Verifica la ruta del backend.';
+    }
+
+    if (status === 400 || status === 422) {
+      return apiMessage || 'Datos inválidos. Revisa los campos del formulario.';
+    }
+
+    if (apiMessage) {
+      return apiMessage;
+    }
+
+    return 'No se pudo crear el producto. Verifica tu sesión y el endpoint protegido.';
+  };
 
   const cargarProductos = async () => {
     try {
@@ -19,6 +53,89 @@ const Productos = () => {
       setError("No se pudo conectar con el servidor. ¿Está encendido?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const limpiarFormulario = () => {
+    setFormData({
+      nombre: '',
+      precio: '',
+      stock: '',
+      id_categoria: '',
+      descripcion: '',
+      imagen_url: ''
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorFormulario(null);
+
+    const precioTexto = formData.precio.trim();
+    const stockTexto = formData.stock.trim();
+    const categoriaTexto = formData.id_categoria.trim();
+    const precio = Number.parseFloat(precioTexto);
+    const stock = Number.parseInt(stockTexto, 10);
+    const id_categoria = Number.parseInt(categoriaTexto, 10);
+
+    if (!precioTexto || !stockTexto || !categoriaTexto || Number.isNaN(precio) || Number.isNaN(stock) || Number.isNaN(id_categoria)) {
+      setErrorFormulario('Precio debe ser numérico; stock y categoría deben ser enteros válidos.');
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const payload = {
+        nombre: formData.nombre.trim(),
+        precio,
+        stock,
+        id_categoria
+      };
+
+      if (formData.descripcion.trim()) {
+        payload.descripcion = formData.descripcion.trim();
+      }
+
+      if (formData.imagen_url.trim()) {
+        payload.imagen_url = formData.imagen_url.trim();
+      }
+
+      const endpointsCreacion = ['/productos/crear'];
+      let ultimoError = null;
+
+      for (const endpoint of endpointsCreacion) {
+        try {
+          await api.post(endpoint, payload);
+          ultimoError = null;
+          break;
+        } catch (err) {
+          ultimoError = err;
+          if (err?.status !== 404) {
+            throw err;
+          }
+        }
+      }
+
+      if (ultimoError) {
+        throw ultimoError;
+      }
+
+      limpiarFormulario();
+      setMostrarFormulario(false);
+      await cargarProductos();
+    } catch (err) {
+      setErrorFormulario(getMensajeErrorCreacion(err));
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -44,6 +161,100 @@ const Productos = () => {
           {productos.length} items
         </span>
       </header>
+
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => setMostrarFormulario((prev) => !prev)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          Nuevo
+        </button>
+      </div>
+
+      {mostrarFormulario && (
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-5 mb-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-800">Crear nuevo producto</h2>
+
+          {errorFormulario && (
+            <p className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{errorFormulario}</p>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              name="nombre"
+              value={formData.nombre}
+              onChange={handleChange}
+              placeholder="Nombre"
+              className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+
+            <input
+              type="number"
+              name="precio"
+              value={formData.precio}
+              onChange={handleChange}
+              placeholder="Precio"
+              className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              min="0"
+              step="0.01"
+              required
+            />
+
+            <input
+              type="number"
+              name="stock"
+              value={formData.stock}
+              onChange={handleChange}
+              placeholder="Stock"
+              className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              min="0"
+              required
+            />
+
+            <input
+              type="number"
+              name="id_categoria"
+              value={formData.id_categoria}
+              onChange={handleChange}
+              placeholder="Categoría ID"
+              className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              min="1"
+              required
+            />
+
+            <input
+              type="url"
+              name="imagen_url"
+              value={formData.imagen_url}
+              onChange={handleChange}
+              placeholder="URL de imagen (opcional)"
+              className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <textarea
+            name="descripcion"
+            value={formData.descripcion}
+            onChange={handleChange}
+            placeholder="Descripción"
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            rows={3}
+          />
+
+          <div>
+            <button
+              type="submit"
+              disabled={guardando}
+              className="bg-slate-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-900 transition-colors disabled:opacity-60"
+            >
+              {guardando ? 'Guardando...' : 'Crear producto'}
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Grid Responsivo: 1 col móvil, 2 tablet, 3 desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
