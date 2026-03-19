@@ -15,7 +15,8 @@ const Productos = () => {
     stock: '',
     id_categoria: '',
     descripcion: '',
-    imagen_url: ''
+    imagen_url: '',
+    youtube_id:''
   });
 
   useEffect(() => {
@@ -71,7 +72,8 @@ const Productos = () => {
       stock: '',
       id_categoria: '',
       descripcion: '',
-      imagen_url: ''
+      imagen_url: '',
+      youtube_id:''
     });
   };
 
@@ -79,9 +81,35 @@ const Productos = () => {
     e.preventDefault();
     setErrorFormulario(null);
 
+    const normalizarYoutubeId = (valor) => {
+      const texto = valor.trim();
+
+      if (!texto) {
+        return '';
+      }
+
+      const matchEmbed = texto.match(/youtube\.com\/embed\/([\w-]{6,})/i);
+      if (matchEmbed?.[1]) {
+        return matchEmbed[1];
+      }
+
+      const matchWatch = texto.match(/[?&]v=([\w-]{6,})/i);
+      if (matchWatch?.[1]) {
+        return matchWatch[1];
+      }
+
+      const matchShort = texto.match(/youtu\.be\/([\w-]{6,})/i);
+      if (matchShort?.[1]) {
+        return matchShort[1];
+      }
+
+      return texto;
+    };
+
     const precioTexto = formData.precio.trim();
     const stockTexto = formData.stock.trim();
     const categoriaTexto = formData.id_categoria.trim();
+    const youtubeTexto = formData.youtube_id.trim();
     const precio = Number.parseFloat(precioTexto);
     const stock = Number.parseInt(stockTexto, 10);
     const id_categoria = Number.parseInt(categoriaTexto, 10);
@@ -107,6 +135,10 @@ const Productos = () => {
 
       if (formData.imagen_url.trim()) {
         payload.imagen_url = formData.imagen_url.trim();
+      }
+
+      if (youtubeTexto) {
+        payload.youtube_id = normalizarYoutubeId(youtubeTexto);
       }
 
       const endpointsCreacion = ['/productos/crear'];
@@ -233,6 +265,15 @@ const Productos = () => {
               placeholder="URL de imagen (opcional)"
               className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
             />
+
+            <input
+              type="text"
+              name="youtube_id"
+              value={formData.youtube_id}
+              onChange={handleChange}
+              placeholder="YouTube ID o URL (opcional)"
+              className="border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <textarea
@@ -264,11 +305,25 @@ const Productos = () => {
             
             {/* Imagen del producto */}
             <div className="h-48 p-4 bg-white flex items-center justify-center border-b border-slate-50">
-              <img 
-                src={prod.imagen_url || "https://via.placeholder.com/150"} 
-                alt={prod.nombre} 
-                className="max-h-full object-contain"
-              />
+              {prod.youtube_id ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${prod.youtube_id}`}
+                  title="youtube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="rounded"
+                />
+              ):(
+                <img 
+                  src={prod.imagen_url || 'https://via.placeholder.com/400x300?text=Sin+imagen'}
+                  alt={prod.nombre}
+                  className="max-h-full object-contain"
+                />
+              )}
+              
             </div>
 
             {/* Cuerpo de la tarjeta */}
