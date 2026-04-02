@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:4000/api"; // Importante colocar la url de tu api
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000"; // Importante colocar la url de tu api
 
 export const api = {
   get: async (endpoint) => {
