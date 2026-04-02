@@ -1,10 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, LogOut } from 'lucide-react';
-
-const AUTH_TOKEN_KEY = 'auth_token';
+import { useAuth } from '../../hooks/useAuth';
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-3 transition-all duration-200 rounded-lg mx-2 mb-1 ${
@@ -14,8 +14,7 @@ const Sidebar = () => {
     }`;
 
   const handleLogout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem('auth_user');
+    logout();
     navigate('/login', { replace: true });
   };
 

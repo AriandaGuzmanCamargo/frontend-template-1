@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { Lock, Mail, LogIn, AlertCircle, Loader2 } from 'lucide-react';
-
-const AUTH_TOKEN_KEY = 'auth_token';
+import { Lock, Mail, LogIn, AlertCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -11,13 +10,7 @@ const Login = () => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        if (token) {
-            navigate('/dashboard', { replace: true });
-        }
-    }, [navigate]);
+    const { login } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -35,18 +28,20 @@ const Login = () => {
             const token = data?.token || data?.accessToken || data?.jwt;
 
             if (!token) {
-                setError('No se recibió un token válido. Verifica tu API de login.');
+                setError('Usuario o contraseña incorrectos.');
                 return;
             }
 
-            localStorage.setItem(AUTH_TOKEN_KEY, token);
+            // Guardar token en contexto y localStorage
+            login(token);
             if (data?.user) {
                 localStorage.setItem('auth_user', JSON.stringify(data.user));
             }
 
+            // Navegar al dashboard
             navigate('/dashboard', { replace: true });
-        } catch {
-            setError('Credenciales incorrectas. Intenta de nuevo.');
+        } catch (err) {
+            setError('Usuario o contraseña incorrectos.');
         } finally {
             setLoading(false);
         }
@@ -107,14 +102,11 @@ const Login = () => {
                         className="w-full bg-purple-600 hover:bg-purple-400 text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {loading ? (
-                            <>
-                                <Loader2 className="animate-spin" size={18} />
-                                Ingresando...
-                            </>
+                            <span>Ingresando...</span>
                         ) : (
                             <>
                                 <LogIn size={18} />
-                                Entrar
+                                <span>Entrar</span>
                             </>
                         )}
                     </button>

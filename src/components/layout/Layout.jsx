@@ -6,8 +6,8 @@ const Layout = ({ children }) => {
       <Sidebar />
       
       {/* main con margen izquierdo (ml-64) para no quedar debajo del sidebar */}
-      <main className="flex-1 ml-64 p-8 transition-all">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 ml-64 p-8 transition-all min-h-screen">
+        <div className="max-w-7xl mx-auto w-full">
           {children}
         </div>
       </main>
